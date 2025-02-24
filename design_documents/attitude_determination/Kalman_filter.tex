@@ -1,0 +1,227 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage{fullpage}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage[shortlabels]{enumitem}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{ulem}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\newcommand{\nl}{\vspace{12pt}}
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+%\usepackage{minted}
+% Catpuccin Macchiato 
+
+\newcommand{\M}[1]{\mathbf{#1}}
+\newcommand{\V}[1]{\mathbf{#1}}
+\newcommand{\Vh}[1]{\mathbf{\hat{#1}}}
+\newcommand{\norm}[1]{\left | \left | #1 \right | \right |}
+\newcommand{\RR}{\mathbbm{R}}        % set of real numbers
+
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\title{Extended Kalman Filter}
+
+\maketitle
+
+\section{Kalamn Filter}
+The filter to estimate $\V x$ is a Kalman-Filter with the prediction:
+\begin{align}
+    \V x_{t|t-1} &= \M F_t \V x_{t-1|t-1} \\ 
+    \M P_{t|t-1} &= \M F_t \M P_{t|t-1} \M F_t^T + \M Q_{t-1}
+\end{align}
+and update step:
+\begin{align}
+    \boldsymbol \nu &=  \V z_t - \M h_t( \V x_{t|t-1} )\\
+    \V K_t &= \M P_{t|t-1} \M H_t^T \left( \M H_t \M P_{t|t-1} \M H_t^T + \M R_t \right)^{-1} \\
+    \V x_{t|t} &= \V x_{t|t-1} + \V K_t \boldsymbol \nu \\
+    \M P_{t|t} &= \left( \M I - \V K_t \M H_t \right) \M P_{t|t-1}
+\end{align}
+
+
+\section{Kinematics}
+\subsection {Quaternion Kinematics}
+The goal is to change the Quaternion over time through the angular rate vector $\V \omega$.
+Typically this is expressed as: 
+\begin{align}
+  \Vh{ \dot q} = \frac {\partial \Vh q} {\partial t} = \frac 1 2 \V \omega \Vh q
+\end{align}
+This can be expanded to: 
+\begin{align}
+  \frac 1 2 \V \omega \Vh q &= \frac 1 2
+                              \begin{bmatrix}
+                                0 - \omega_x q_i - \omega_y q_j - \omega_z q_k \\ 
+                                0 + \omega_x q_w + \omega_y q_k - \omega_z q_j \\ 
+                                0 - \omega_x q_k + \omega_y q_w + \omega_z q_i \\ 
+                                0 + \omega_x q_j - \omega_y q_i - \omega_z q_w \\ 
+                              \end{bmatrix} = \frac 1 2 \begin{bmatrix}
+                                0 - \omega_x q_i - \omega_y q_j - \omega_z q_k \\ 
+                                \omega_x q_w + 0 - \omega_z q_j + \omega_y q_k \\ 
+                                \omega_y q_w + \omega_z q_i + 0 - \omega_x q_k \\ 
+                                 - \omega_z q_w - \omega_y q_i + \omega_x q_j + 0 \\ 
+                              \end{bmatrix} = \frac 1 2 \begin{bmatrix}
+                                0 & - \omega_x  & - \omega_y  & - \omega_z  \\ 
+                                \omega_x  &  0 & - \omega_z  &  \omega_y  \\ 
+                                \omega_y  &  \omega_z  &  0 & - \omega_x  \\ 
+                                 - \omega_z  & - \omega_y  &  \omega_x  &  0 \\ 
+                              \end{bmatrix} \Vh q 
+\end{align}
+
+\section{Sensor Models}
+
+\subsection{Gyroscope}
+The general gyroscope model is:
+\begin{align}
+  \V m_g = \V m_B + \omega_g + \V v_g
+\end{align}
+Where $\V m_B$ is the real angular rate in the body frame, $\omega_g$ is the gyroscope bias and $\V v_g$ is the noise.
+\subsection{Accelerometer}
+\begin{align}
+  \V m_a = \V m_B - \V g_B + \omega_a + \V v_a
+\end{align}
+Where $\V m_B$ is the real acceleration in the body frame, $\V g_B$ is the gravitational vector in the body frame, $\omega_g$ is the bias and $\V v_g$ is the noise.
+
+\subsection{Magnetometer}
+\begin{align}
+  \V m_m = \V m_B + \omega_m + \V v_m
+\end{align}
+Where $\V m_m$ is the real magnetic filed in the body frame, $\omega_m$ is the bias and $\V v_m$ is the noise.
+
+\section{Measurement Prediction}
+
+\subsection{Accelerometer}
+The prediction of the Accelerometer presumes that the IMU is static in space.
+This does not hold in reality and a revision of the Filter will be necessary in the future.
+Generally the prediction is that the gravitational vector points downwards.
+Hence,
+\begin{align}
+  \V {h_a} =  \M {R_q} \Vh{g_g} = \M {R_q}
+  \begin{bmatrix}
+    0 \\ 0 \\ -1
+  \end{bmatrix}
+\end{align}
+Here $\M {R_q}$ is the rotor from the current attitude.
+Since the gravitational vector is mostly 0 the computation can be simplified:
+\begin{align}
+  \V {h_a} = - \begin{bmatrix}
+    2 (q_i \cdot q_k + q_w \cdot q_j) \\
+    2 (q_j \cdot q_k - q_w \cdot q_i) \\
+    q_w^2 - q_i^2 - q_j^2 + q_k^2 \\
+  \end{bmatrix}
+\end{align}
+
+For the observation matrix the following then follows:
+\begin{align}
+ \M H_a =  \frac { \partial \V {h_a}}  {\partial \V x}  =
+  \begin{bmatrix}
+    - 2 q_j & - 2 q_k & - 2 q_w & - 2 q_i & 0 & 0 & 0 & 0 & 0 & 0 \\
+    2 q_i & 2 q_w & - 2 q_k & - 2 q_j & 0 & 0 & 0 & 0 & 0 & 0 \\
+    - 2 q_w & 2 q_i & 2 q_j & - 2 q_k & 0 & 0 & 0 & 0 & 0 & 0 \\
+  \end{bmatrix}
+\end{align}
+\subsection{Magnetometer}
+Since the magnetometer is only used to compute the yaw of the sensor a projection to the x-y plane is necessary to eliminate negative influence the z axis.
+\begin{align}
+  \V m_B = \M R^{-1} \left ((\M R \cdot \V m_B) \cdot
+  \begin{bmatrix}
+    1 \\ 1 \\ 0
+  \end{bmatrix} \right)
+\end{align}
+The yaw axis is then: 
+\begin{align}
+  \Psi = atan2 (- m_y, m_x)
+\end{align}
+The prediction of $\Psi$ can be calculated from the current attitude: 
+\begin{align}
+  h_a = atan2 (2 (q_i \cdot q_k + q_w \cdot q_j), 1 - 2  q_j^2 - 2 q_k^2)
+\end{align}
+For the observation matrix the following then follows if I use my immense mathematical talents (and Wolfram Alpha):
+\begin{align}
+  \M H_m &=  \frac {\partial \V {h_m}}  {\partial \V x} = \begin{bmatrix}
+    \frac { \partial \V {h_m}}  {\partial \V q_w} &
+    \frac { \partial \V {h_m}}  {\partial \V q_i} &
+    \frac { \partial \V {h_m}}  {\partial \V q_j} &
+    \frac { \partial \V {h_m}}  {\partial \V q_k} &
+    0 & 0 & 0& 0 & 0 & 0 \\
+  \end{bmatrix} \\
+    \frac { \partial \V {h_m}}  {\partial \V q_w} &= \frac { 2 q_z (-2 q_j^2 - 2 q_z^2 + 1)}{4 (q_w q_z + q_i q_j)^2 + (-2 q_j^2 - 2 q_z^2 + 1)^2} \\ 
+    \frac { \partial \V {h_m}}  {\partial \V q_i} &= \frac {2 q_j (-2 q_j^2 - 2 q_z^2 + 1)}{4 (q_w q_z + q_i q_j)^2 + (-2 q_j^2 - 2 q_z^2 + 1)^2} \\
+    \frac { \partial \V {h_m}}  {\partial \V q_j} &= \frac {2 (4 q_w q_j q_z + 2 q_i q_j^2 - 2 q_i q_z^2 + q_i)}{4 (q_w^2 - 1) q_z^2 + 8 q_w q_i q_j q_z + 4 q_j^2 (q_i^2 + 2 q_z^2 - 1) + 4 q_j^4 + 4 q_z^4 + 1} \\
+    \frac { \partial \V {h_m}}  {\partial \V q_k} &= \frac{ q_w (-4 q_j^2 + 4 q_z^2 + 2) + 8 q_i q_j q_z}{4 (q_w^2 - 1) q_z^2 + 8 q_w q_i q_j q_z + 4 q_j^2 (q_i^2 + 2 q_z^2 - 1) + 4 q_j^4 + 4 q_z^4 + 1}
+\end{align}
+\section {State Model}
+The EKF should predict the attitude and gyroscope bias.
+Bias terms for the other sensors and non orthogonality are to be ignored.
+The noise is assumed to be $\sim \mathcal{N}(0, \sigma^2)$.
+Therefore: 
+\begin{align}
+  \V {x_k} =
+  \begin{bmatrix}
+    \Vh q \\ \V \omega \\ \V b
+  \end{bmatrix}
+\end{align}
+Where $\Vh q$ is the attitude Quaternion and $\V b$ is the bias.
+
+Notice that:
+\begin{align}
+  \V {q_{k+1}} &= \V{q_k} + \frac 1 2
+  \begin{bmatrix}
+    0 & - \omega_x  & - \omega_y  & - \omega_z  \\ 
+    \omega_x  &  0 & - \omega_z  &  \omega_y   \\ 
+    \omega_y  &  \omega_z  &  0 & - \omega_x \\ 
+    - \omega_z  & - \omega_y  &  \omega_x  0 \\ 
+  \end{bmatrix} \cdot \V {q_k} \\ 
+  \V \omega &= \V m_B - \omega_g \\
+  \V b &= \omega_g
+\end{align}
+
+Hence, 
+\begin{align}
+  \V {x_{k+1}} = \V f (k, x) = 
+  \begin{bmatrix}
+    \V {q_{k+1}} \\ 
+    \V \omega \\
+    \V b
+  \end{bmatrix}
+\end{align}
+
+The state transition matrix is then the Jacobain of $\V f$:
+\begin{align}
+  \V {F_{k}} =  \frac { \partial \V f (k, x) } {\partial x} = 
+  \begin{bmatrix}
+    \frac {\partial \V {q_{k+1}}} {\partial q} & \frac {\partial \V {q_{k+1}}} {\partial \omega} & 0 \\ 
+    0 & 0 & \frac {\partial \V \omega} {\partial \omega} \\
+    0 & 0 & \frac {\partial \V b} {\partial \omega} \\
+  \end{bmatrix}
+\end{align}
+
+\section{Noise}
+The noise of the Accelerometer and the Magnetometer are trivial: 
+\begin{align}
+  \M R_m &= \M I_3 \sigma_m^2 \\
+  \M R_\Psi &= \sigma_A^2 \\
+\end{align}
+The process Noise is less trivial.
+The noise response of the system
+\begin{align}
+  \M F_R = \frac {\partial f_k} {\partial v} =
+  \begin{bmatrix}
+    0_{4,3} & 0_{4,3} \\
+    I_3 & 0_3 \\
+    0_3 & I_3
+  \end{bmatrix}
+\end{align}
+So,
+\begin{align}
+  \M Q = F_R U F_R^T
+\end{align}
+
+
+\section{Initial Values}
+Dont know yet, eh
+\end{document}

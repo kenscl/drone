@@ -23,8 +23,8 @@ acc_x_data, acc_y_data, acc_z_data = [], [], []
 gyro_x_data, gyro_y_data, gyro_z_data = [], [], []
 mag_x_data, mag_y_data, mag_z_data = [], [], []
 
-plot_gyro = True
-plot_acc = False
+plot_gyro = False 
+plot_acc = True
 plot_mag = False
 
 try:
