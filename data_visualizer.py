@@ -2,6 +2,8 @@ import serial
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from ekf import EKF
+from ekf import quat2euler
 
 port = '/dev/ttyUSB0'  
 baudrate = 115200 
@@ -35,10 +37,11 @@ try:
                 sensor, x, y, z = data.split(",")
                 now = time.time() - start
                 if str(sensor) == str('LSM9DS1_acc'):
-                    last_acc = np.array([float(x), float(y), float(z)])
+                    last_acc = np.array([float(x), float(y), -float(z)])
                     acc_x_data.append(last_acc[0])
                     acc_y_data.append(last_acc[1])
                     acc_z_data.append(last_acc[2])
+                    acc.append(last_acc)
                     time_stamp_acc.append(now)
 
                 elif str(sensor) == str('LSM9DS1_gyro'):
@@ -46,6 +49,7 @@ try:
                     gyro_x_data.append(last_gyro[0])
                     gyro_y_data.append(last_gyro[1])
                     gyro_z_data.append(last_gyro[2])
+                    gyro.append(last_gyro)
                     time_stamp_gyro.append(now)
 
                 elif str(sensor) == str('LSM9DS1_mag'):
@@ -53,6 +57,7 @@ try:
                     mag_x_data.append(last_mag[0])
                     mag_y_data.append(last_mag[1])
                     mag_z_data.append(last_mag[2])
+                    mag.append(last_mag)
                     time_stamp_mag.append(now)
 
                 print("\033c", end="") # clear terminal
@@ -87,7 +92,28 @@ try:
     plt.legend()
 
     plt.show()
+    plt.cla()
+    plt.clf()
+    ekf = EKF(gyro, acc, mag)
+    dt = np.diff(np.array(time_stamp_gyro) / 1000)
+    hist = list()
+    tft = list()
+    acc = np.array(acc)
+    gyro = np.array(gyro)
+    mag = np.array(mag)
+    for i in range(len(acc) - 100):
+        tft.append(i)
+        ekf.predict(gyro[i], dt[i])
+        ekf.update_acc(acc[i])
+        ekf.update_mag(mag[i])
+        ekf.update()
+        q_hist = ekf.x[0:4]
+        hist.append(np.array(quat2euler(q_hist)))
+
+    plt.plot(tft, hist)
+    plt.show()
 
 except UnicodeDecodeError:
     print("Error decoding data.")
     pass
+
