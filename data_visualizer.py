@@ -13,31 +13,43 @@ ser = serial.Serial(port, baudrate)
 last_acc = list() 
 last_gyro = np.array([0., 0., 0.])
 last_mag = np.array([0., 0., 0.])
+last_attitude = np.array([0., 0., 0., 0.,])
 acc = list() 
 gyro = list()
 mag = list()
+attitude = list()
 time_stamp_gyro = list()
 time_stamp_acc = list()
 time_stamp_mag = list()
+time_stamp_attitude = list()
 start = time.time()
 
 acc_x_data, acc_y_data, acc_z_data = [], [], []
 gyro_x_data, gyro_y_data, gyro_z_data = [], [], []
 mag_x_data, mag_y_data, mag_z_data = [], [], []
 
-plot_gyro = False 
+plot_gyro = False
 plot_acc = True
 plot_mag = False
+plot_attitude = False
 
 try:
     try:
         while (True):
             data = ser.readline().decode('utf-8').strip().replace("\x00", "")
+            now = time.time() - start
+            try:
+                sensor, q, i, j, k = data.split(",")
+                if str(sensor) == str('Attitude'):
+                    last_attitude = np.array([q, i, j, k])
+                    attitude.append(last_attitude)
+                    time_stamp_attitude.append(now)
+            except ValueError:
+                pass
             try:
                 sensor, x, y, z = data.split(",")
-                now = time.time() - start
                 if str(sensor) == str('LSM9DS1_acc'):
-                    last_acc = np.array([float(x), float(y), -float(z)])
+                    last_acc = np.array([float(x), float(y), float(z)]) * -1
                     acc_x_data.append(last_acc[0])
                     acc_y_data.append(last_acc[1])
                     acc_z_data.append(last_acc[2])
@@ -45,7 +57,7 @@ try:
                     time_stamp_acc.append(now)
 
                 elif str(sensor) == str('LSM9DS1_gyro'):
-                    last_gyro = np.array([float(x), float(y), float(z)])
+                    last_gyro = np.array([float(x), float(y), float(z)]) * np.pi / 180
                     gyro_x_data.append(last_gyro[0])
                     gyro_y_data.append(last_gyro[1])
                     gyro_z_data.append(last_gyro[2])
@@ -60,13 +72,14 @@ try:
                     mag.append(last_mag)
                     time_stamp_mag.append(now)
 
-                print("\033c", end="") # clear terminal
-                print("Time: ", now)
-                print("Accelerometer: ", last_acc)
-                print("Gyroscope: ", last_gyro)
-                print("Magnetometer: ", last_mag)
             except ValueError:
                 pass
+            print("\033c", end="") # clear terminal
+            print("Time: ", now)
+            print("Accelerometer: ", last_acc)
+            print("Gyroscope: ", last_gyro)
+            print("Magnetometer: ", last_mag)
+            print("Attitude: ", last_attitude)
     except KeyboardInterrupt:
         pass 
     ser.close()
@@ -80,10 +93,22 @@ try:
         plt.plot(time_stamp_gyro, gyro_x_data, label="Gyroscope X", color='c')
         plt.plot(time_stamp_gyro, gyro_y_data, label="Gyroscope Y", color='m')
         plt.plot(time_stamp_gyro, gyro_z_data, label="Gyroscope Z", color='y')
+        time_stamp_gyro_cp = time_stamp_gyro
+        time_stamp_gyro_cp.append(0)
+        dt = np.diff(np.array(time_stamp_gyro_cp))
+        gyro_x_angle = np.concatenate(([0], np.cumsum(gyro_x_data * dt)))  
+        gyro_y_angle = np.concatenate(([0], np.cumsum(gyro_y_data * dt)))  
+        gyro_z_angle = np.concatenate(([0], np.cumsum(gyro_z_data * dt))) 
+
+        plt.plot(time_stamp_gyro, gyro_x_angle, label="Integrated Gyro X", color='c')
+        plt.plot(time_stamp_gyro, gyro_y_angle, label="Integrated Gyro Y", color='m')
+        plt.plot(time_stamp_gyro, gyro_z_angle, label="Integrated Gyro Z", color='y')
     if (plot_mag):
         plt.plot(time_stamp_mag, mag_x_data, label="Magnetometer X", color='k')
         plt.plot(time_stamp_mag, mag_y_data, label="Magnetometer Y", color='orange')
         plt.plot(time_stamp_mag, mag_z_data, label="Magnetometer Z", color='purple')
+    if (plot_attitude):
+        plt.plot(time_stamp_attitude, attitude)
 
     plt.title('Sensor Data (Accelerometer, Gyroscope, Magnetometer)')
     plt.xlabel('Time (s)')
@@ -94,23 +119,26 @@ try:
     plt.show()
     plt.cla()
     plt.clf()
+    dt = np.diff(np.array(time_stamp_gyro))
     ekf = EKF(gyro, acc, mag)
-    dt = np.diff(np.array(time_stamp_gyro) / 1000)
     hist = list()
     tft = list()
     acc = np.array(acc)
     gyro = np.array(gyro)
     mag = np.array(mag)
-    for i in range(len(acc) - 100):
+    yaw = list()
+    ekf.update_mag(mag[0]) 
+    for i in range(len(acc) - 5):
+        ekf.update_mag(mag[int(i * 0.67)]) 
+        yaw.append(ekf.y[3] * 180 / np.pi)
         tft.append(i)
-        ekf.predict(gyro[i], dt[i])
         ekf.update_acc(acc[i])
-        ekf.update_mag(mag[i])
+        ekf.predict(gyro[i], dt[i])
         ekf.update()
         q_hist = ekf.x[0:4]
-        hist.append(np.array(quat2euler(q_hist)))
-
+        hist.append(np.array(quat2euler(q_hist)) * 180 / np.pi)
     plt.plot(tft, hist)
+    plt.plot(tft, yaw)
     plt.show()
 
 except UnicodeDecodeError:

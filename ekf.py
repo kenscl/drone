@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import scipy.io
 
 
+def print_norm(mat):
+    print("norm: %.30f" % sum(np.array(mat).flatten()))
+
+
 def euler2quat(yaw, pitch, roll):
     cy, sy = np.cos(yaw * 0.5), np.sin(yaw * 0.5)
     cp, sp = np.cos(pitch * 0.5), np.sin(pitch * 0.5)
@@ -26,7 +30,7 @@ def quat2euler(q):
 
 class EKF:
     def __init__(self, gyro, acc, mag):
-        num_init = 20
+        num_init = 100
 
         mean_gyro = np.mean(gyro[0:num_init], axis=0)
         acc = np.array(acc)
@@ -47,7 +51,7 @@ class EKF:
         mr = np.array(self.R @ mean_mag).flatten()
         yaw_init = np.atan2(-mr[1], mr[0])
 
-        q_init = euler2quat(yaw_init, pitch_init, roll_init)
+        q_init = euler2quat(yaw_init, roll_init, pitch_init)
 
         self.x = np.array([q_init[0],
                            q_init[1],
@@ -89,11 +93,11 @@ class EKF:
         s_acc = (np.sqrt(acc_sum[0]/(num_init-1)) + np.sqrt(acc_sum[1]/(num_init-1)) + np.sqrt(acc_sum[2]/(num_init-1))) / 3
         s_yaw = np.sqrt(mag_sum/(num_init-1))
 
-        self.R = np.matrix([[s_acc ** 2, 0, 0, 0],
-                            [0, s_acc ** 2, 0, 0],
-                            [0, 0, s_acc ** 2, 0],
-                            [0, 0, 0, s_yaw ** 2]])
-
+        self.R = np.matrix([[2.12425429e-06, 0, 0, 0],
+                            [0, 2.12425429e-06, 0, 0],
+                            [0, 0, 2.12425429e-06, 0],
+                            [0, 0, 0, 7.98243297e-05]])
+        print(self.R)
         Fu = np.matrix([[0, 0, 0, 0, 0, 0], 
                         [0, 0, 0, 0, 0, 0],
                         [0, 0, 0, 0, 0, 0],
@@ -115,8 +119,9 @@ class EKF:
 
         self.R_nb = np.transpose(self.R_bn)
 
-        U = np.diag([s_gyro ** 2, s_gyro ** 2, s_gyro ** 2, v_bias, v_bias, v_bias])
+        U = np.diag([3.47930986e-04, 3.47930986e-04, 3.47930986e-04, v_bias, v_bias, v_bias])
         self.Q = Fu @ U @ np.transpose(Fu)
+        print(self.Q)
 
     def update_mag(self, mag):
         ymag = mag
@@ -130,6 +135,23 @@ class EKF:
     def update_acc(self, acc):
         yacc = acc
         self.y = np.array([yacc[0], yacc[1], yacc[2], self.y[3]])
+
+    def quaternion_multiply(self, q, r):
+        q0, q1, q2, q3 = q
+        r0, r1, r2, r3 = r
+        return np.array([
+            q0*r0 - q1*r1 - q2*r2 - q3*r3,
+            q0*r1 + q1*r0 + q2*r3 - q3*r2,
+            q0*r2 - q1*r3 + q2*r0 + q3*r1,
+            q0*r3 + q1*r2 - q2*r1 + q3*r0
+        ])
+
+    def quaternion_update(self, q, wx, wy, wz, dt):
+        omega = np.array([0, wx, wy, wz])
+        q_dot = 0.5 * self.quaternion_multiply(q, omega)
+        q_new = q + dt * q_dot
+
+        return q_new / np.linalg.norm(q_new)
 
     def predict(self, gyro,dt):
         self.x = np.array(self.x).flatten()
@@ -145,13 +167,18 @@ class EKF:
         xgy = self.x[8]
         xgz = self.x[9]
 
+        q = self.quaternion_update(self.x[0:4], wx, wy, wz, dt)
+        self.x[0] = q[0]
+        self.x[1] = q[1]
+        self.x[2] = q[2]
+        self.x[3] = q[3]
         self.x[0] = q0+0.5*dt*(-q1*wx-q2*wy-q3*wz)
         self.x[1] = q1+0.5*dt*(q0*wx-q3*wy+q2*wz)
         self.x[2] = q2+0.5*dt*(q3*wx+q0*wy-q1*wz)
         self.x[3] = q3+0.5*dt*(-q2*wx+q1*wy+q0*wz)
-        self.x[4] = gyro[0]-xgx
-        self.x[5] = gyro[1]-xgy
-        self.x[6] = gyro[2]-xgz
+        self.x[4] = gyro[0] - xgx
+        self.x[5] = gyro[1] - xgy
+        self.x[6] = gyro[2] - xgz
         self.x[7] = xgx
         self.x[8] = xgy
         self.x[9] = xgz
@@ -215,3 +242,29 @@ class EKF:
         self.P = (np.identity(10) - self.K @ self.H) @ self.P
 
 
+#mat = scipy.io.loadmat('data.mat')
+#
+#mag = np.array(np.matrix(mat.get('mag')).transpose())
+#acc = np.array(np.matrix(mat.get('acc')).transpose())
+#gyro = np.array(np.matrix(mat.get('gyro')).transpose())
+#gyro = np.array(np.matrix(mat.get('gyro')).transpose())
+#time = np.array(mat.get('time')).flatten()
+#
+#dt = np.diff(time)
+#
+#ekf = EKF(gyro, acc, mag)
+#
+#q = list()
+#tft = list()
+#
+#for i in range(len(acc)-1):
+#    ekf.update_acc(acc[i])
+#    ekf.update_mag(mag[i])
+#    ekf.predict(gyro[i], dt[i])
+#    ekf.update()
+#    q.append(quat2euler(ekf.x[0:4]))
+#    tft.append(i)
+#
+#
+#plt.plot(tft, q)
+#plt.show()
