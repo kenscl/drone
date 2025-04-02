@@ -29,14 +29,16 @@ gyro_x_data, gyro_y_data, gyro_z_data = [], [], []
 mag_x_data, mag_y_data, mag_z_data = [], [], []
 
 plot_gyro = False
-plot_acc = True
+plot_acc = False
 plot_mag = False
-plot_attitude = False
+plot_attitude = True
+last_n = list()
 
 try:
     try:
         while (True):
             data = ser.readline().decode('utf-8').strip().replace("\x00", "")
+            last_n.append(data)
             now = time.time() - start
             try:
                 sensor, q, i, j, k = data.split(",")
@@ -80,6 +82,10 @@ try:
             print("Gyroscope: ", last_gyro)
             print("Magnetometer: ", last_mag)
             print("Attitude: ", last_attitude)
+            for i in reversed(last_n):
+                print(i)
+            if (len(last_n) > 20):
+                last_n = last_n[1:21]
     except KeyboardInterrupt:
         pass 
     ser.close()
