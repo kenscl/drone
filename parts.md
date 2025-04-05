@@ -1,3 +1,9 @@
+# Tools 
+* 3D Printer 
+* Screw driver 
+
+That's it currently. 
+
 # Parts list
 * [STM32F407G-DISC1](https://www.digikey.de/de/products/detail/stmicroelectronics/STM32F407G-DISC1/5824404?s=N4IgTCBcDaIM4BcC2BmMAzALABgOwHMQBdAXyA) 
   NR: 1.

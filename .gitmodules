@@ -1,0 +1,4 @@
+[submodule "calib"]
+	path = calib
+	url = https://github.com/kenscl/SROS.git
+	branch = drone/calib

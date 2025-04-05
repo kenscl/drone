@@ -28,8 +28,8 @@ acc_x_data, acc_y_data, acc_z_data = [], [], []
 gyro_x_data, gyro_y_data, gyro_z_data = [], [], []
 mag_x_data, mag_y_data, mag_z_data = [], [], []
 
-plot_gyro = False
-plot_acc = False
+plot_gyro = False 
+plot_acc = True 
 plot_mag = False
 plot_attitude = True
 last_n = list()
@@ -51,7 +51,7 @@ try:
             try:
                 sensor, x, y, z = data.split(",")
                 if str(sensor) == str('LSM9DS1_acc'):
-                    last_acc = np.array([float(x), float(y), float(z)]) * -1
+                    last_acc = np.array([float(x), float(y), float(z)])
                     acc_x_data.append(last_acc[0])
                     acc_y_data.append(last_acc[1])
                     acc_z_data.append(last_acc[2])
