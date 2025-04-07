@@ -121,7 +121,7 @@ class Calib:
         self.mag = list()
         wait = True
         while (wait):
-            res = input("Magnetometer Calibration: \n. Move the Magneteometer to the Positive Z-Axis \nProceed? Y/n? ")
+            res = input("Magnetometer Calibration: \n. Rotate the Magneteometer about the Positive X-Axis \nProceed? Y/n? ")
             if res == "Y" or res == "y" or res == "yes":
                 wait = False
         print("Starting Magnetometer calibration in 3...")
@@ -130,11 +130,11 @@ class Calib:
         time.sleep(1)
         print("Starting Magnetometer calibration in 1...")
         time.sleep(1)
-        self.gather_data(100)
+        self.gather_data(2000)
 
         wait = True
         while (wait):
-            res = input("Magnetometer Calibration: \n. Move the Magneteometer to the Negative Z-Axis \nProceed? Y/n? ")
+            res = input("Magnetometer Calibration: \n. Rotate the Magneteometer about the Positive Y-Axis \nProceed? Y/n? ")
             if res == "Y" or res == "y" or res == "yes":
                 wait = False
         print("Starting Magnetometer calibration in 3...")
@@ -143,11 +143,11 @@ class Calib:
         time.sleep(1)
         print("Starting Magnetometer calibration in 1...")
         time.sleep(1)
-        self.gather_data(100)
+        self.gather_data(2000)
 
         wait = True
         while (wait):
-            res = input("Magnetometer Calibration: \n. Move the Magneteometer to the Positive X-Axis \nProceed? Y/n? ")
+            res = input("Magnetometer Calibration: \n. Rotate the Magneteometer about the Positive Z-Axis \nProceed? Y/n? ")
             if res == "Y" or res == "y" or res == "yes":
                 wait = False
         print("Starting Magnetometer calibration in 3...")
@@ -156,59 +156,7 @@ class Calib:
         time.sleep(1)
         print("Starting Magnetometer calibration in 1...")
         time.sleep(1)
-        self.gather_data(100)
-
-        wait = True
-        while (wait):
-            res = input("Magnetometer Calibration: \n. Move the Magneteometer to the Negative X-Axis \nProceed? Y/n? ")
-            if res == "Y" or res == "y" or res == "yes":
-                wait = False
-        print("Starting Magnetometer calibration in 3...")
-        time.sleep(1)
-        print("Starting Magnetometer calibration in 2...")
-        time.sleep(1)
-        print("Starting Magnetometer calibration in 1...")
-        time.sleep(1)
-        self.gather_data(100)
-
-        wait = True
-        while (wait):
-            res = input("Magnetometer Calibration: \n. Move the Magneteometer to the Positive Y-Axis \nProceed? Y/n? ")
-            if res == "Y" or res == "y" or res == "yes":
-                wait = False
-        print("Starting Magnetometer calibration in 3...")
-        time.sleep(1)
-        print("Starting Magnetometer calibration in 2...")
-        time.sleep(1)
-        print("Starting Magnetometer calibration in 1...")
-        time.sleep(1)
-        self.gather_data(100)
-
-        wait = True
-        while (wait):
-            res = input("Magnetometer Calibration: \n. Move the Magneteometer to the Negative Y-Axis \nProceed? Y/n? ")
-            if res == "Y" or res == "y" or res == "yes":
-                wait = False
-        print("Starting Magnetometer calibration in 3...")
-        time.sleep(1)
-        print("Starting Magnetometer calibration in 2...")
-        time.sleep(1)
-        print("Starting Magnetometer calibration in 1...")
-        time.sleep(1)
-        self.gather_data(100)
-
-        wait = True
-        while (wait):
-            res = input("Magnetometer Calibration: \n. Move the Magneteometer around \nProceed? Y/n? ")
-            if res == "Y" or res == "y" or res == "yes":
-                wait = False
-        print("Starting Magnetometer calibration in 3...")
-        time.sleep(1)
-        print("Starting Magnetometer calibration in 2...")
-        time.sleep(1)
-        print("Starting Magnetometer calibration in 1...")
-        time.sleep(1)
-        self.gather_data(10000)
+        self.gather_data(2000)
 
         # see https://www.ensta-bretagne.fr/lebars/Share/RI_magnetometer.pdf for ellipseoid stuff
         #  the solution is my own since i didnt understand theirs
@@ -333,19 +281,19 @@ class Calib:
         return bias, scale
         
     def main(self):
-        gyro_bias = self.gyro_calib()
+        #gyro_bias = self.gyro_calib()
         soft_iron, hard_iron = self.magnetometer_calib()
-        acc_bias, acc_scale = self.accelerometer_calib()
+        #acc_bias, acc_scale = self.accelerometer_calib()
 
         # calibration prints
         
         print("\n Calibration values: (Input in src/communication/LSM9DS1.cpp line 12)")
         print("void LSM9DS1_calibrate_sensors() {")
-        print("    // Gyroscope")
-        print("    gyro_bias[0] = %f;" % gyro_bias[0])
-        print("    gyro_bias[1] = %f;" % gyro_bias[1])
-        print("    gyro_bias[2] = %f;" % gyro_bias[2])
-        print("")
+        #print("    // Gyroscope")
+        #print("    gyro_bias[0] = %f;" % gyro_bias[0])
+        #print("    gyro_bias[1] = %f;" % gyro_bias[1])
+        #print("    gyro_bias[2] = %f;" % gyro_bias[2])
+        #print("")
         print("    // Magnetometer")
         print("")
         print("    soft_iron[0][0] = %f;" % soft_iron[0][0])
@@ -365,23 +313,23 @@ class Calib:
         print("    hard_iron[1] = %f;" % hard_iron[1])
         print("    hard_iron[2] = %f;" % hard_iron[2])
         print("")
-        print("    // Accelerometer")
-        print("")
-        print("    acc_bias[0] = %f;" % acc_bias[0])
-        print("    acc_bias[1] = %f;" % acc_bias[1])
-        print("    acc_bias[2] = %f;" % acc_bias[2])
-        print("")
-        print("    acc_scale[0][0] = %f;" % acc_scale[0][0])
-        print("    acc_scale[0][1] = %f;" % acc_scale[0][1])
-        print("    acc_scale[0][2] = %f;" % acc_scale[0][2])
-        print("")
-        print("    acc_scale[1][0] = %f;" % acc_scale[1][0])
-        print("    acc_scale[1][1] = %f;" % acc_scale[1][1])
-        print("    acc_scale[1][2] = %f;" % acc_scale[1][2])
-        print("")
-        print("    acc_scale[2][0] = %f;" % acc_scale[2][0])
-        print("    acc_scale[2][1] = %f;" % acc_scale[2][1])
-        print("    acc_scale[2][2] = %f;" % acc_scale[2][2])
+        #print("    // Accelerometer")
+        #print("")
+        #print("    acc_bias[0] = %f;" % acc_bias[0])
+        #print("    acc_bias[1] = %f;" % acc_bias[1])
+        #print("    acc_bias[2] = %f;" % acc_bias[2])
+        #print("")
+        #print("    acc_scale[0][0] = %f;" % acc_scale[0][0])
+        #print("    acc_scale[0][1] = %f;" % acc_scale[0][1])
+        #print("    acc_scale[0][2] = %f;" % acc_scale[0][2])
+        #print("")
+        #print("    acc_scale[1][0] = %f;" % acc_scale[1][0])
+        #print("    acc_scale[1][1] = %f;" % acc_scale[1][1])
+        #print("    acc_scale[1][2] = %f;" % acc_scale[1][2])
+        #print("")
+        #print("    acc_scale[2][0] = %f;" % acc_scale[2][0])
+        #print("    acc_scale[2][1] = %f;" % acc_scale[2][1])
+        #print("    acc_scale[2][2] = %f;" % acc_scale[2][2])
         print("}")
 
 

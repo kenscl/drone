@@ -9,5 +9,5 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	var quat = object. basis.get_rotation_quaternion()
+	var quat = object.basis.get_rotation_quaternion()
 	text = "Quaternion: (%.3f, %.3f, %.3f, %.3f)" % [quat.w, quat.x, quat.y, quat.z]

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import time
 from ekf import EKF
 from ekf import quat2euler
+from scipy.spatial.transform import Rotation
 
 port = '/dev/ttyUSB0'  
 baudrate = 115200 
@@ -27,11 +28,13 @@ start = time.time()
 acc_x_data, acc_y_data, acc_z_data = [], [], []
 gyro_x_data, gyro_y_data, gyro_z_data = [], [], []
 mag_x_data, mag_y_data, mag_z_data = [], [], []
+q_att, i_att, j_att, k_att = [], [], [], []
+att_rpy = list()
 
 plot_gyro = False 
-plot_acc = True 
-plot_mag = False
-plot_attitude = True
+plot_acc = False
+plot_mag = False 
+plot_attitude = True 
 last_n = list()
 
 try:
@@ -41,11 +44,20 @@ try:
             last_n.append(data)
             now = time.time() - start
             try:
-                sensor, q, i, j, k = data.split(",")
+                sensor, _q, _i, _j, _k = data.split(",")
                 if str(sensor) == str('Attitude'):
-                    last_attitude = np.array([q, i, j, k])
-                    attitude.append(last_attitude)
                     time_stamp_attitude.append(now)
+                    last_attitude = np.array([float(_q), float(_i), float(_j), float(_k)])
+                    q_att.append(last_attitude[0])
+                    i_att.append(last_attitude[1])
+                    j_att.append(last_attitude[2])
+                    k_att.append(last_attitude[3])
+
+                    attitude.append(last_attitude)
+
+                    rot = Rotation.from_quat(last_attitude)
+                    roll, pitch, yaw = rot.as_euler('xyz', degrees=True)
+                    att_rpy.append(np.array([roll, pitch, yaw]))
             except ValueError:
                 pass
             try:
@@ -82,6 +94,7 @@ try:
             print("Gyroscope: ", last_gyro)
             print("Magnetometer: ", last_mag)
             print("Attitude: ", last_attitude)
+
             for i in reversed(last_n):
                 print(i)
             if (len(last_n) > 20):
@@ -110,11 +123,18 @@ try:
         plt.plot(time_stamp_gyro, gyro_y_angle, label="Integrated Gyro Y", color='m')
         plt.plot(time_stamp_gyro, gyro_z_angle, label="Integrated Gyro Z", color='y')
     if (plot_mag):
-        plt.plot(time_stamp_mag, mag_x_data, label="Magnetometer X", color='k')
-        plt.plot(time_stamp_mag, mag_y_data, label="Magnetometer Y", color='orange')
-        plt.plot(time_stamp_mag, mag_z_data, label="Magnetometer Z", color='purple')
+        #plt.plot(time_stamp_mag, mag_x_data, label="Magnetometer X", color='k')
+        #plt.plot(time_stamp_mag, mag_y_data, label="Magnetometer Y", color='orange')
+        #plt.plot(time_stamp_mag, mag_z_data, label="Magnetometer Z", color='purple')
+        plt.scatter(mag_x_data, mag_y_data, label="XY",  color='orange')
+        plt.scatter(mag_x_data, mag_z_data, label="XZ", color='blue')
+        plt.scatter(mag_y_data, mag_z_data, label="YZ", color='yellow')
     if (plot_attitude):
-        plt.plot(time_stamp_attitude, attitude)
+        plt.plot(time_stamp_attitude, np.array(q_att), label="Attitude q", color='k')
+        plt.plot(time_stamp_attitude, np.array(i_att), label="Attitude i", color='r')
+        plt.plot(time_stamp_attitude, np.array(j_att), label="Attitude j", color='g')
+        plt.plot(time_stamp_attitude, np.array(k_att), label="Attitude k", color='b')
+        plt.plot(time_stamp_attitude, np.array(att_rpy))
 
     plt.title('Sensor Data (Accelerometer, Gyroscope, Magnetometer)')
     plt.xlabel('Time (s)')
