@@ -28,5 +28,5 @@ func _process(_delta):
 				var qk = quat["qk"]
 				
 				var q = Quaternion(qi, qj, qk, qw)
-				print(q)
-				rotation = q.get_euler()
+				print(q.get_euler())
+				basis = Basis(q)

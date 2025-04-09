@@ -30,7 +30,8 @@
 \maketitle
 
 \section{Kalamn Filter}
-The filter to estimate $\V x$ is a Kalman-Filter with the prediction:
+The goal of the Kalamn Filter is to estimate the Attitude of the IMU.
+The filter is defined by the following steps.
 \begin{align}
     \V x_{t|t-1} &= \M F_t \V x_{t-1|t-1} \\ 
     \M P_{t|t-1} &= \M F_t \M P_{t|t-1} \M F_t^T + \M Q_{t-1}
@@ -82,7 +83,7 @@ The general gyroscope model is:
 Where $\V m_B$ is the real angular rate in the body frame, $\omega_g$ is the gyroscope bias and $\V v_g$ is the noise.
 \subsection{Accelerometer}
 \begin{align}
-  \V m_a = \V m_B - \V g_B + \omega_a + \V v_a
+  \V m_a =  \M A (\V m_B - \V g_B) + \omega_a + \V v_a
 \end{align}
 Where $\V m_B$ is the real acceleration in the body frame, $\V g_B$ is the gravitational vector in the body frame, $\omega_g$ is the bias and $\V v_g$ is the noise.
 
@@ -92,11 +93,25 @@ Where $\V m_B$ is the real acceleration in the body frame, $\V g_B$ is the gravi
 \end{align}
 Where $\V m_m$ is the real magnetic filed in the body frame, $\omega_m$ is the bias and $\V v_m$ is the noise.
 
+In actuality the Magnetometer measurement is reduced to a Yaw pseudo measurement with the aid of the Accelerometer measurements.
+First the roll $\phi$ and pitch $\theta$ will be determined with the help of the corrected Magnetometer measurement $\V m_{a,c}$.
+\begin{align}
+  \phi &= atan2(m_{a,c,y}, - m_{a,c,z}) \\ 
+  \theta &= atan\left (\frac {- m_{a,c,x}}{\sqrt{m_{a,c,y}^2 + m_{a,c,z}^2}} \right) \\ 
+\end{align}
+These are then used to calculate the compensated magnetic field vector $\V m_{m,c}$ (z is omitted)
+\begin{align}
+  m_{m,c,x} &= m_{m,x} \cdot \cos {\theta} + m_{m,z} \cdot \sin {\theta} \\
+  m_{m,c,y} &= m_{m,x} \cdot \sin {\phi} \sin {\theta} + m_{m,y} \cdot \sin {\phi} - m_{m,z} \cdot \sin {\phi} \cos {\theta}\\
+\end{align}
+The compensated Vector is then used to calculate the yaw.
+\begin{align}
+  \psi = atan2(- m_{m,c,y}, m_{m,c,x})
+\end{align}
+
 \section{Measurement Prediction}
 
 \subsection{Accelerometer}
-The prediction of the Accelerometer presumes that the IMU is static in space.
-This does not hold in reality and a revision of the Filter will be necessary in the future.
 Generally the prediction is that the gravitational vector points downwards.
 Hence,
 \begin{align}
@@ -124,8 +139,7 @@ For the observation matrix the following then follows:
     - 2 q_w & 2 q_i & 2 q_j & - 2 q_k & 0 & 0 & 0 & 0 & 0 & 0 \\
   \end{bmatrix}
 \end{align}
-\subsection{Magnetometer}
-Since the magnetometer is only used to compute the yaw of the sensor a projection to the x-y plane is necessary to eliminate negative influence the z axis.
+\subsection{Magnetometer}Since the magnetometer is only used to compute the yaw of the sensor a projection to the x-y plane is necessary to eliminate negative influence the z axis.
 \begin{align}
   \V m_B = \M R^{-1} \left ((\M R \cdot \V m_B) \cdot
   \begin{bmatrix}
@@ -154,6 +168,7 @@ For the observation matrix the following then follows if I use my immense mathem
     \frac { \partial \V {h_m}}  {\partial \V q_j} &= \frac {2 (4 q_w q_j q_z + 2 q_i q_j^2 - 2 q_i q_z^2 + q_i)}{4 (q_w^2 - 1) q_z^2 + 8 q_w q_i q_j q_z + 4 q_j^2 (q_i^2 + 2 q_z^2 - 1) + 4 q_j^4 + 4 q_z^4 + 1} \\
     \frac { \partial \V {h_m}}  {\partial \V q_k} &= \frac{ q_w (-4 q_j^2 + 4 q_z^2 + 2) + 8 q_i q_j q_z}{4 (q_w^2 - 1) q_z^2 + 8 q_w q_i q_j q_z + 4 q_j^2 (q_i^2 + 2 q_z^2 - 1) + 4 q_j^4 + 4 q_z^4 + 1}
 \end{align}
+
 \section {State Model}
 The EKF should predict the attitude and gyroscope bias.
 Bias terms for the other sensors and non orthogonality are to be ignored.

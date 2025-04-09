@@ -13,11 +13,11 @@ albedo_color = Color(0, 0, 1, 1)
 [node name="Node" type="Node" parent="."]
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.53907, 0.456312, 0.133354)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.258417, -5.77565, 0.133354)
 omni_range = 35.6668
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 5, 0, 0)
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, -6, 0)
 
 [node name="BLock" type="Node" parent="."]
 

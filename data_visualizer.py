@@ -34,7 +34,7 @@ att_rpy = list()
 plot_gyro = False 
 plot_acc = False
 plot_mag = False 
-plot_attitude = True 
+plot_attitude = True
 last_n = list()
 
 try:
@@ -55,9 +55,8 @@ try:
 
                     attitude.append(last_attitude)
 
-                    rot = Rotation.from_quat(last_attitude)
-                    roll, pitch, yaw = rot.as_euler('xyz', degrees=True)
-                    att_rpy.append(np.array([roll, pitch, yaw]))
+                    yaw, pitch, roll = quat2euler(last_attitude)
+                    att_rpy.append(np.array([roll, pitch, yaw]) * 180 / np.pi)
             except ValueError:
                 pass
             try:
@@ -123,18 +122,20 @@ try:
         plt.plot(time_stamp_gyro, gyro_y_angle, label="Integrated Gyro Y", color='m')
         plt.plot(time_stamp_gyro, gyro_z_angle, label="Integrated Gyro Z", color='y')
     if (plot_mag):
-        #plt.plot(time_stamp_mag, mag_x_data, label="Magnetometer X", color='k')
-        #plt.plot(time_stamp_mag, mag_y_data, label="Magnetometer Y", color='orange')
-        #plt.plot(time_stamp_mag, mag_z_data, label="Magnetometer Z", color='purple')
-        plt.scatter(mag_x_data, mag_y_data, label="XY",  color='orange')
-        plt.scatter(mag_x_data, mag_z_data, label="XZ", color='blue')
-        plt.scatter(mag_y_data, mag_z_data, label="YZ", color='yellow')
+        plt.plot(time_stamp_mag, mag_x_data, label="Magnetometer X", color='k')
+        plt.plot(time_stamp_mag, mag_y_data, label="Magnetometer Y", color='orange')
+        plt.plot(time_stamp_mag, mag_z_data, label="Magnetometer Z", color='purple')
+        #plt.scatter(mag_x_data, mag_y_data, label="XY",  color='orange')
+        #plt.scatter(mag_x_data, mag_z_data, label="XZ", color='blue')
+        #plt.scatter(mag_y_data, mag_z_data, label="YZ", color='yellow')
     if (plot_attitude):
         plt.plot(time_stamp_attitude, np.array(q_att), label="Attitude q", color='k')
-        plt.plot(time_stamp_attitude, np.array(i_att), label="Attitude i", color='r')
-        plt.plot(time_stamp_attitude, np.array(j_att), label="Attitude j", color='g')
-        plt.plot(time_stamp_attitude, np.array(k_att), label="Attitude k", color='b')
-        plt.plot(time_stamp_attitude, np.array(att_rpy))
+        #plt.plot(time_stamp_attitude, np.array(i_att), label="Attitude i", color='r')
+        #plt.plot(time_stamp_attitude, np.array(j_att), label="Attitude j", color='g')
+        #plt.plot(time_stamp_attitude, np.array(k_att), label="Attitude k", color='b')
+        plt.plot(time_stamp_attitude, np.array(att_rpy)[0:, 0], label="roll")
+        plt.plot(time_stamp_attitude, np.array(att_rpy)[0:, 1], label="pitch")
+        plt.plot(time_stamp_attitude, np.array(att_rpy)[0:, 2], label="yaw")
 
     plt.title('Sensor Data (Accelerometer, Gyroscope, Magnetometer)')
     plt.xlabel('Time (s)')
@@ -155,16 +156,16 @@ try:
     yaw = list()
     ekf.update_mag(mag[0]) 
     for i in range(len(acc) - 5):
-        ekf.update_mag(mag[int(i * 0.67)]) 
+        ekf.update_mag(mag[int(i * 0.19)]) 
         yaw.append(ekf.y[3] * 180 / np.pi)
         tft.append(i)
         ekf.update_acc(acc[i])
-        ekf.predict(gyro[i], dt[i])
+        ekf.predict(gyro[i], 0.003)
         ekf.update()
         q_hist = ekf.x[0:4]
         hist.append(np.array(quat2euler(q_hist)) * 180 / np.pi)
     plt.plot(tft, hist)
-    plt.plot(tft, yaw)
+    #plt.plot(tft, yaw)
     plt.show()
 
 except UnicodeDecodeError:
