@@ -115,18 +115,21 @@ The compensated Vector is then used to calculate the yaw.
 Generally the prediction is that the gravitational vector points downwards.
 Hence,
 \begin{align}
-  \V {h_a} =  \M {R_q} \Vh{g_g} = \M {R_q}
+  \V {h_a} = \Vh q^* \cdot \Vh g_g \cdot \Vh q = \Vh q^*
   \begin{bmatrix}
-    0 \\ 0 \\ -1
+    0 \\ 0 \\ 0 \\ 1
+  \end{bmatrix} \Vh q = \M R_q^{-1 }
+\begin{bmatrix}
+    0 \\ 0 \\ 1
   \end{bmatrix}
 \end{align}
 Here $\M {R_q}$ is the rotor from the current attitude.
-Since the gravitational vector is mostly 0 the computation can be simplified:
+Since the gravitational vector is mostly 0 and that $\M R^{-1} = \M R^{\mathsf {T}}$ for orthogonal matrices the computation can be simplified:
 \begin{align}
-  \V {h_a} = - \begin{bmatrix}
-    2 (q_i \cdot q_k + q_w \cdot q_j) \\
-    2 (q_j \cdot q_k - q_w \cdot q_i) \\
-    q_w^2 - q_i^2 - q_j^2 + q_k^2 \\
+  \V {h_a} = \begin{bmatrix}
+    2 (q_i \cdot q_k - q_w \cdot q_j) \\
+    2 (q_j \cdot q_k + q_w \cdot q_i) \\
+    1 - 2 (q_i^2 + q_j^2)
   \end{bmatrix}
 \end{align}
 
@@ -134,9 +137,9 @@ For the observation matrix the following then follows:
 \begin{align}
  \M H_a =  \frac { \partial \V {h_a}}  {\partial \V x}  =
   \begin{bmatrix}
-    - 2 q_j & - 2 q_k & - 2 q_w & - 2 q_i & 0 & 0 & 0 & 0 & 0 & 0 \\
-    2 q_i & 2 q_w & - 2 q_k & - 2 q_j & 0 & 0 & 0 & 0 & 0 & 0 \\
-    - 2 q_w & 2 q_i & 2 q_j & - 2 q_k & 0 & 0 & 0 & 0 & 0 & 0 \\
+    - 2 q_j & 2 q_k & - 2 q_w & 2 q_i & 0 & 0 & 0 & 0 & 0 & 0 \\
+    2 q_i & 2 q_w &  2 q_k & 2 q_j & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & - 4 q_i & - 4 q_j & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
   \end{bmatrix}
 \end{align}
 \subsection{Magnetometer}Since the magnetometer is only used to compute the yaw of the sensor a projection to the x-y plane is necessary to eliminate negative influence the z axis.
