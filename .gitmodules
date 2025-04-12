@@ -2,3 +2,6 @@
 	path = calib
 	url = https://github.com/kenscl/SROS.git
 	branch = drone/calib
+[submodule "code"]
+	path = code
+	url = https://github.com/kenscl/SROS.git
