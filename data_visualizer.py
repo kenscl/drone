@@ -32,9 +32,9 @@ q_att, i_att, j_att, k_att = [], [], [], []
 att_rpy = list()
 
 plot_gyro = False 
-plot_acc = False
-plot_mag = False 
-plot_attitude = True
+plot_acc = False 
+plot_mag = False
+plot_attitude = True 
 last_n = list()
 
 try:
@@ -146,27 +146,6 @@ try:
     plt.show()
     plt.cla()
     plt.clf()
-    dt = np.diff(np.array(time_stamp_gyro))
-    ekf = EKF(gyro, acc, mag)
-    hist = list()
-    tft = list()
-    acc = np.array(acc)
-    gyro = np.array(gyro)
-    mag = np.array(mag)
-    yaw = list()
-    ekf.update_mag(mag[0]) 
-    for i in range(len(acc) - 5):
-        ekf.update_mag(mag[int(i * 0.19)]) 
-        yaw.append(ekf.y[3] * 180 / np.pi)
-        tft.append(i)
-        ekf.update_acc(acc[i])
-        ekf.predict(gyro[i], 0.003)
-        ekf.update()
-        q_hist = ekf.x[0:4]
-        hist.append(np.array(quat2euler(q_hist)) * 180 / np.pi)
-    plt.plot(tft, hist)
-    #plt.plot(tft, yaw)
-    plt.show()
 
 except UnicodeDecodeError:
     print("Error decoding data.")
