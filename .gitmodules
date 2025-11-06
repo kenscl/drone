@@ -5,3 +5,6 @@
 [submodule "code"]
 	path = code
 	url = https://github.com/kenscl/SROS.git
+[submodule "drone/calib"]
+	path = drone/calib
+	url = https://github.com/kenscl/SROS.git
