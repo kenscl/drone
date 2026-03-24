@@ -44,8 +44,8 @@ try:
             last_n.append(data)
             now = time.time() - start
             try:
-                sensor, _q, _i, _j, _k = data.split(",")
-                if str(sensor) == str('Attitude'):
+                sensor, _Vector, _bracket1, _q, _i, _j, _k, _bracket2 = data.split(" ")
+                if str(sensor) == str('Attitude:'):
                     time_stamp_attitude.append(now)
                     last_attitude = np.array([float(_q), float(_i), float(_j), float(_k)])
                     q_att.append(last_attitude[0])
@@ -70,7 +70,7 @@ try:
                     time_stamp_acc.append(now)
 
                 elif str(sensor) == str('[LSM9DS1_gyro]'):
-                    last_gyro = np.array([float(x), float(y), float(z)]) * np.pi / 180
+                    last_gyro = np.array([float(x), float(y), float(z)])
                     gyro_x_data.append(last_gyro[0])
                     gyro_y_data.append(last_gyro[1])
                     gyro_z_data.append(last_gyro[2])
@@ -118,9 +118,9 @@ try:
         gyro_y_angle = np.concatenate(([0], np.cumsum(gyro_y_data * dt)))
         gyro_z_angle = np.concatenate(([0], np.cumsum(gyro_z_data * dt)))
 
-        plt.plot(time_stamp_gyro, gyro_x_angle, label="Integrated Gyro X", color='c')
-        plt.plot(time_stamp_gyro, gyro_y_angle, label="Integrated Gyro Y", color='m')
-        plt.plot(time_stamp_gyro, gyro_z_angle, label="Integrated Gyro Z", color='y')
+        #plt.plot(time_stamp_gyro, gyro_x_angle, label="Integrated Gyro X", color='c')
+        #plt.plot(time_stamp_gyro, gyro_y_angle, label="Integrated Gyro Y", color='m')
+        #plt.plot(time_stamp_gyro, gyro_z_angle, label="Integrated Gyro Z", color='y')
     if (plot_mag):
         plt.plot(time_stamp_mag, mag_x_data, label="Magnetometer X", color='k')
         plt.plot(time_stamp_mag, mag_y_data, label="Magnetometer Y", color='orange')

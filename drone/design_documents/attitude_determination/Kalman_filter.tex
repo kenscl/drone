@@ -1,4 +1,5 @@
 \documentclass[10pt,a4paper]{article}
+
 \usepackage{fullpage}
 \usepackage{amsmath,amsfonts,amssymb}
 \usepackage[shortlabels]{enumitem}
@@ -59,22 +60,11 @@ Typically this is expressed as:
 \end{align}
 This can be expanded to: 
 \begin{align}
-  \frac 1 2 \V \omega \Vh q &= \frac 1 2
-                              \begin{bmatrix}
-                                0 - \omega_x q_i - \omega_y q_j - \omega_z q_k \\ 
-                                0 + \omega_x q_w + \omega_y q_k - \omega_z q_j \\ 
-                                0 - \omega_x q_k + \omega_y q_w + \omega_z q_i \\ 
-                                0 + \omega_x q_j - \omega_y q_i - \omega_z q_w \\ 
-                              \end{bmatrix} = \frac 1 2 \begin{bmatrix}
-                                0 - \omega_x q_i - \omega_y q_j - \omega_z q_k \\ 
-                                \omega_x q_w + 0 - \omega_z q_j + \omega_y q_k \\ 
-                                \omega_y q_w + \omega_z q_i + 0 - \omega_x q_k \\ 
-                                - \omega_z q_w - \omega_y q_i + \omega_x q_j + 0 \\ 
-                              \end{bmatrix} = \frac 1 2 \begin{bmatrix}
+  \frac 1 2 \V \omega \Vh q &= \frac 1 2 \begin{bmatrix}
                                 0 & - \omega_x  & - \omega_y  & - \omega_z  \\ 
-                                \omega_x  &  0 & - \omega_z  &  \omega_y  \\ 
-                                \omega_y  &  \omega_z  &  0 & - \omega_x  \\ 
-                                - \omega_z  & - \omega_y  &  \omega_x  &  0 \\ 
+                                \omega_x  &  0 &  \omega_z  &  -\omega_y  \\ 
+                                \omega_y  &  -\omega_z  &  0 & \omega_x  \\ 
+                                 \omega_z  &  \omega_y  &  -\omega_x  &  0 \\ 
                               \end{bmatrix} \Vh q 
 \end{align}
 
@@ -147,44 +137,21 @@ For the observation matrix the following then follows:
     2 q_w & - 2 q_i & - 2 q_j & 2 q_k & 0 & 0 & 0 \\
   \end{bmatrix}
 \end{align}
-\subsection{Magnetometer}Since the magnetometer is only used to compute the yaw of the sensor a projection to the x-y plane is necessary to eliminate negative influence the z axis.
+\subsection{Magnetometer}
+We begin similarly:
 \begin{align}
-  \V m_B = \M R^{-1} \left ((\M R \cdot \V m_B) \cdot
-  \begin{bmatrix}
-    1 \\ 1 \\ 0
-  \end{bmatrix} \right)
+  \V {h_m} = \Vh q^* \cdot \Vh m_B \cdot \Vh q = \M R_q^{-1 } \Vh m_B
 \end{align}
-The yaw axis is then: 
+It should be noted that $\Vh m_B$ has to be calculated using a world model, or simply measuring it during setup. 
+In this case we can not simplify. 
+
 \begin{align}
-  \Psi = atan2 (- m_y, m_x)
-\end{align}
-The prediction of $\Psi$ can be calculated from the current attitude: 
-\begin{align}
-  h_a = atan2 (2 (q_w \cdot q_k + q_i \cdot q_j), 1 - 2  q_j^2 - 2 q_k^2)
-\end{align}
-We can rewrite this as:
-\begin{align}
-  h_a &= atan2 (A, B) \\
-  A &= 2 (q_w \cdot q_k + q_i \cdot q_j) \\
-  B &= 1 - 2  q_j^2 - 2 q_k^2 \\
-\end{align}
-Then the standard derivitive is:
-\begin{align}
-  \frac {\partial h_a} {\partial q_n} = \frac {B} {A^2 + B^2} \frac {\partial A} {\partial x} - \frac {A} {A^2 + B^2} \frac {\partial B} {\partial x}
-\end{align}
-So in total: 
-\begin{align}
-  \M H_m &=  \frac {\partial \V {h_m}}  {\partial \V x} = \begin{bmatrix}
-    \frac { \partial \V {h_m}}  {\partial \V q_w} &
-                                                    \frac { \partial \V {h_m}}  {\partial \V q_i} &
-                                                                                                    \frac { \partial \V {h_m}}  {\partial \V q_j} &
-                                                                                                                                                    \frac { \partial \V {h_m}}  {\partial \V q_k} &
-                                                                                                                                                                                                    0 & 0 & 0 \\
-  \end{bmatrix} \\
-  \frac { \partial \V {h_m}}  {\partial \V q_w} &= \frac B {A^2 + B^2} 2 q_k \\ 
-  \frac { \partial \V {h_m}}  {\partial \V q_i} &= \frac B {A^2 + B^2} 2 q_j\\
-  \frac { \partial \V {h_m}}  {\partial \V q_j} &= \frac {2Bq_i + 4Aq_j} {A^2 + B^2}   \\
-  \frac { \partial \V {h_m}}  {\partial \V q_k} &= \frac {2Bq_w + 4q_k} {A^2 + B^2}
+  \M H_m =  \frac { \partial \V {h_m}}  {\partial \V x}  =
+2 \begin{bmatrix}
+q_w m_x + q_k m_y - q_j m_z & q_i m_x + q_j m_y + q_k m_z & -q_j m_x + q_i m_y - q_w m_z & -q_k m_x - q_w m_y + q_i m_z \\
+-q_k m_x + q_w m_y + q_i m_z & q_j m_x - q_i m_y + q_w m_z & q_i m_x + q_j m_y + q_k m_z & -q_w m_x - q_k m_y + q_j m_z \\
+q_j m_x - q_i m_y + q_w m_z & q_k m_x + q_w m_y - q_i m_z & -q_w m_x + q_k m_y - q_j m_z & q_i m_x + q_j m_y + q_k m_z
+\end{bmatrix}
 \end{align}
 
 \section {State Model}
@@ -204,10 +171,10 @@ Notice that:
 \begin{align}
   \V {q_{k+1}} &= \V{q_k} + \frac 1 2
                  \begin{bmatrix}
-                   0 & - \omega_x  & - \omega_y  & - \omega_z  \\ 
-                   \omega_x  &  0 & - \omega_z  &  \omega_y   \\ 
-                   \omega_y  &  \omega_z  &  0 & - \omega_x \\ 
-                   - \omega_z  & - \omega_y  &  \omega_x  0 \\ 
+                                0 & - \omega_x  & - \omega_y  & - \omega_z  \\ 
+                                \omega_x  &  0 &  \omega_z  &  -\omega_y  \\ 
+                                \omega_y  &  -\omega_z  &  0 & \omega_x  \\ 
+                                 \omega_z  &  \omega_y  &  -\omega_x  &  0 \\ 
                  \end{bmatrix} \cdot \V {q_k} \Delta t \\ 
   \V b_{k + 1} &= \V b_k
 \end{align}
@@ -235,52 +202,33 @@ Where:
   \frac {\partial \V {q_{k+1}}} {\partial q} &= 
                                                \V {q_{k+1}} = I + \frac 1 2
                                                \begin{bmatrix}
-                                                 0 & - \omega_x  & - \omega_y  & - \omega_z  \\ 
-                                                 \omega_x  &  0 & - \omega_z  &  \omega_y   \\ 
-                                                 \omega_y  &  \omega_z  &  0 & - \omega_x \\ 
-                                                 - \omega_z  & - \omega_y  &  \omega_x  0 \\ 
+                                0 & - \omega_x  & - \omega_y  & - \omega_z  \\ 
+                                \omega_x  &  0 &  \omega_z  &  -\omega_y  \\ 
+                                \omega_y  &  -\omega_z  &  0 & \omega_x  \\ 
+                                 \omega_z  &  \omega_y  &  -\omega_x  &  0 \\ 
                                                \end{bmatrix}  \Delta t \\ 
   \frac {\partial \V {q_{k+1}}} {\partial b} &=
-                                               \begin{bmatrix}
-                                                 \frac 1 2 \begin{bmatrix}
-                                                   0 & -1 & 0 & 0 \\
-                                                   1 & 0 & 0 & 0 \\
-                                                   0 & 0 & 0 & -1 \\
-                                                   0 & 0 & 1 & 0
-                                                 \end{bmatrix} q_k \Delta t & \frac 1 2 \begin{bmatrix}
-                                                   0 & 0 & -1 & 0 \\
-                                                   0 & 0 & 0 & 1 \\
-                                                   1 & 0 & 0 & 0 \\
-                                                   0 & -1 & 0 & 0
-                                                 \end{bmatrix} q_k \Delta t & \frac 1 2 \begin{bmatrix}
-                                                   0 & 0 & 0 & -1 \\
-                                                   0 & 0 & -1 & 0 \\
-                                                   0 & 1 & 0 & 0 \\
-                                                   -1 & 0 & 0 & 0
-                                                 \end{bmatrix} q_k \Delta t
-                                               \end{bmatrix} \\
-                                             &=
                                                \begin{bmatrix}
                                                  \frac 1 2 \Delta t
                                                  \begin{bmatrix}
                                                    - q_i \\
                                                    q_w \\
-                                                   -q_k \\
-                                                   q_j
+                                                   q_k \\
+                                                   - q_j
                                                  \end{bmatrix} & 
                                                                  \frac 1 2 \Delta t
                                                                  \begin{bmatrix}
                                                                    - q_j \\
-                                                                   q_k \\
+                                                                   - q_k \\
                                                                    q_w \\
-                                                                   - q_i
+                                                                   q_i
                                                                  \end{bmatrix} &
                                                                                  \frac 1 2 \Delta t
                                                                                  \begin{bmatrix}
                                                                                    - q_k \\
-                                                                                   - q_j \\
-                                                                                   q_i \\
-                                                                                   - q_w
+                                                                                    q_j \\
+                                                                                   - q_i \\
+                                                                                    q_w
                                                                                  \end{bmatrix} 
                                                \end{bmatrix}
 \end{align}
