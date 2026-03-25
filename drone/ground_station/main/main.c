@@ -26,20 +26,32 @@ void add_peer(uint8_t *mac) {
 
 
 void on_sent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
-    printf("TX -> %02X:%02X:%02X:%02X:%02X:%02X : %s\n",
-        info->des_addr[0], info->des_addr[1], info->des_addr[2],
-        info->des_addr[3], info->des_addr[4], info->des_addr[5],
-        status == ESP_NOW_SEND_SUCCESS ? "OK" : "FAIL");
+    if (status != ESP_NOW_SEND_SUCCESS)
+    {
+        printf("%02X:%02X:%02X:%02X:%02X:%02X : %s\n", info->des_addr[0], info->des_addr[1], info->des_addr[2],
+               info->des_addr[3], info->des_addr[4], info->des_addr[5], status == ESP_NOW_SEND_SUCCESS ? "OK" : "FAIL");
+    }
+}
+
+void MSG(char *type, char *content)
+{
+    printf("{\"Topic\": \"%s\", \"Content\": \"%s\"}\n", type, content);
 }
 
 void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
 
-    printf("RX <- %02X:%02X:%02X:%02X:%02X:%02X : ",
-        info->src_addr[0], info->src_addr[1], info->src_addr[2],
-        info->src_addr[3], info->src_addr[4], info->src_addr[5]);
+    //printf("RX <- %02X:%02X:%02X:%02X:%02X:%02X : ",
+    //    info->src_addr[0], info->src_addr[1], info->src_addr[2],
+    //    info->src_addr[3], info->src_addr[4], info->src_addr[5]);
 
-    fwrite(data, 1, len, stdout);
-    printf("\n");
+    if (data[0] == 0x21) {
+        char message[250];
+        memcpy( message, (void *)&data[2], data[1]-2);
+        message[data[1]-2] = '\0';
+
+        MSG("sensor/gyroscope\0", message);
+        //printf("got message of size: %d: %s \n", data[1], message);
+    }
 
     if (len == 8 && memcmp(data, "DISCOVER", 8) == 0) {
 

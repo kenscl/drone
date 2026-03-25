@@ -101,7 +101,16 @@ void app_main(void) {
             printf("Searching...\n");
             vTaskDelay(pdMS_TO_TICKS(500));
         } else {
-            esp_now_send(peer, (uint8_t*)"hello from rc", 13);
+            char * msg = "hello from rc";
+            int size = strlen(msg);
+            char data[size + 2];
+            data[0] = 0x21;
+            data[1] = size + 2;
+            for (int i = 0; i < size; ++i)
+            {
+                data[i + 2] = msg[i];
+            }
+            esp_now_send(peer, (uint8_t *)data, strlen(data));
             vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
